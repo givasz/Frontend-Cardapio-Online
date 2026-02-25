@@ -1,16 +1,17 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useSchedule } from '../contexts/ScheduleContext';
 import styles from '../styles';
 import { API_BASE_URL } from '../config';
 import StyledButton from './StyledButton';
-import PizzaCustomizationModal from './PizzaCustomizationModal';
 
 // ✅ IMAGEM PADRÃO DEFINIDA LOCALMENTE (COMO SUGERIDO PELO SEU AMIGO)
 const PLACEHOLDER_IMAGE = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI2MDAiIGhlaWdodD0iNDAwIiB2aWV3Qm94PSIwIDAgMTUwIDEwMCI+CiAgICA8cmVjdCB3aWR0aD0iMTUwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2VlZSIvPgogICAgPHBhdGggZD0iTTMwIDgwIEw1MCA0MCBMNzAgNjAgTDEwMCAzMCBMMTMwIDcwIEwxNTAgNTAgTDE1MCAxMDAgTDAgMTAwIFoiIGZpbGw9IiNjY2MiLz4KICAgIDxjaXJjbGUgY3g9IjY1IiBjeT0iMzUiIHI9IjEwIiBmaWxsPSIjY2NjIi8+CiAgICA8dGV4dCB4PSI1MCUiIHk9IjUwJSIgZm9udC1zaXplPSIxMiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgYWxpZ25tZW50LWJhc2VsaW5lPSJjZW50cmFsIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZmlsbD0iI2FhYSI+Tk8gSU1BR0U8L3RleHQ+Cjwvc3ZnPg==";
 
 
 const Menu = () => {
+    const navigate = useNavigate();
     const { addToCart } = useCart();
     const { isOpen } = useSchedule();
     const [categories, setCategories] = useState([]);
@@ -18,7 +19,6 @@ const Menu = () => {
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [customizingPizza, setCustomizingPizza] = useState(null);
 
     const fetchAllData = useCallback(async () => {
         setLoading(true);
@@ -63,7 +63,7 @@ const Menu = () => {
     const handleItemClick = (item) => {
         const pizzaCategory = categories.find(c => c.nome.toLowerCase() === 'pizzas');
         if (item.categoryId === pizzaCategory?.id) {
-            setCustomizingPizza(item);
+            navigate('/customize-pizza', { state: { basePizza: item, allFlavors: pizzaItems } });
         } else {
             addToCart(item);
         }
@@ -117,14 +117,6 @@ const Menu = () => {
                         ))}
                     </div>
                 </>
-            )}
-            {customizingPizza && (
-                <PizzaCustomizationModal 
-                    isOpen={!!customizingPizza}
-                    onClose={() => setCustomizingPizza(null)}
-                    basePizza={customizingPizza}
-                    allFlavors={pizzaItems}
-                />
             )}
         </>
     );

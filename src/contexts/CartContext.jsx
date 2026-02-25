@@ -34,7 +34,10 @@ export const CartProvider = ({ children }) => {
         setIsCartOpen(false);
     };
 
-    const cartTotal = useMemo(() => cartItems.reduce((total, item) => total + item.preco * item.quantidade, 0), [cartItems]);
+    const cartTotal = useMemo(() => cartItems.reduce((total, item) => {
+        const itemPrice = item.preco + (item.precoBorda || 0);
+        return total + itemPrice * item.quantidade;
+    }, 0), [cartItems]);
     const cartItemCount = useMemo(() => cartItems.reduce((count, item) => count + item.quantidade, 0), [cartItems]);
 
     return (

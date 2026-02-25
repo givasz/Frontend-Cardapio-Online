@@ -11,10 +11,10 @@ const StyledButton = ({ variant = 'primary', children, style, ...props }) => {
         default: variantStyle = styles.buttonPrimary; break;
     }
     const hoverStyles = {
-        primary: { backgroundColor: '#C2410C' },
-        secondary: { backgroundColor: '#D1D5DB' },
-        destructive: { backgroundColor: '#B91C1C' },
-        ghost: { backgroundColor: '#F3F4F6' }
+        primary: { backgroundColor: '#B91C1C', transform: 'translateY(-2px)', boxShadow: '0 4px 8px rgba(220, 38, 38, 0.3)' },
+        secondary: { backgroundColor: '#FCA5A5', color: 'white' },
+        destructive: { backgroundColor: '#991B1B', transform: 'translateY(-2px)' },
+        ghost: { backgroundColor: '#FEF2F2' }
     };
     const finalStyle = { ...styles.button, ...variantStyle, ...(isHovered && hoverStyles[variant]), ...style };
     if (props.disabled) {

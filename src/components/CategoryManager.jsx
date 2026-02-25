@@ -48,7 +48,7 @@ const CategoryManager = () => {
             setNewCategoryName('');
             fetchCategories();
         } catch (err) {
-            alert(err.message);
+            alert(`❌ Erro ao criar categoria\n\n${err.message}\n\nPor favor, tente novamente.`);
         }
     };
 
@@ -66,7 +66,7 @@ const CategoryManager = () => {
             }
             fetchCategories(); // Atualiza a lista
         } catch (err) {
-            alert(err.message);
+            alert(`❌ Erro ao excluir categoria\n\n${err.message}\n\nPor favor, tente novamente.`);
         }
     };
 
@@ -85,10 +85,10 @@ const CategoryManager = () => {
              setUpdatedCategoryName('');
              fetchCategories(); // Atualiza a lista
         } catch (err) {
-             alert(err.message);
+             alert(`❌ Erro ao atualizar categoria\n\n${err.message}\n\nPor favor, tente novamente.`);
         }
     };
-    
+
     // 5. Funções auxiliares para entrar e sair do modo de edição
     const handleStartEdit = (category) => {
         setEditingCategoryId(category.id);

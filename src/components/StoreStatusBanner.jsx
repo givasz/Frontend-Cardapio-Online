@@ -18,6 +18,7 @@ const StoreStatusBanner = () => {
                 }
             } catch (error) {
                 console.error("Falha ao buscar a taxa de entrega:", error);
+                // Não mostra alert aqui pois é apenas informação secundária no banner
             }
         };
 

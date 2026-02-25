@@ -1,4 +1,5 @@
 import React from 'react';
+import WhatsAppButton from './WhatsAppButton';
 
 // Estilos para os botões e o card para não poluir o componente
 const cardStyles = {
@@ -33,10 +34,11 @@ const PedidoCard = ({ pedido, onStatusChange }) => {
         });
     };
     
-    // Calcula o total do pedido usando o precoFinal e a taxa de entrega
+    // Calcula o total do pedido usando o precoFinal, precoBorda e a taxa de entrega
     const subtotal = pedido.itens.reduce((acc, itemPedido) => {
         const precoItem = itemPedido.precoFinal ?? itemPedido.item?.preco ?? 0;
-        return acc + (precoItem * itemPedido.quantidade);
+        const precoBordaItem = itemPedido.precoBorda ?? 0;
+        return acc + ((precoItem + precoBordaItem) * itemPedido.quantidade);
     }, 0);
     const totalPedido = (subtotal + (pedido.taxaEntrega || 0)).toFixed(2);
     
@@ -58,17 +60,35 @@ const PedidoCard = ({ pedido, onStatusChange }) => {
 
             <strong>Itens:</strong>
             <ul style={{ listStyle: 'none', paddingLeft: '0', fontSize: '0.9em' }}>
-                {pedido.itens.map(itemPedido => (
-                    <li key={itemPedido.id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                        <span>
-                            {itemPedido.quantidade}x {itemPedido.item?.nome || 'Item não encontrado'}
-                            {itemPedido.tamanho && <strong style={{ color: '#EA580C' }}> ({itemPedido.tamanho})</strong>}
-                        </span>
-                        <span>
-                            R$ {(itemPedido.precoFinal ?? itemPedido.item?.preco ?? 0).toFixed(2)}
-                        </span>
-                    </li>
-                ))}
+                {pedido.itens.map(itemPedido => {
+                    const precoItem = itemPedido.precoFinal ?? itemPedido.item?.preco ?? 0;
+                    const precoBordaItem = itemPedido.precoBorda ?? 0;
+                    const precoTotalItem = precoItem + precoBordaItem;
+
+                    return (
+                        <li key={itemPedido.id} style={{ marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid #f0f0f0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                <span>
+                                    {itemPedido.quantidade}x {itemPedido.item?.nome || 'Item não encontrado'}
+                                    {itemPedido.tamanho && <strong style={{ color: '#EA580C' }}> ({itemPedido.tamanho})</strong>}
+                                </span>
+                                <span style={{ fontWeight: 600 }}>
+                                    R$ {precoTotalItem.toFixed(2)}
+                                </span>
+                            </div>
+                            {itemPedido.tipoMassa && (
+                                <div style={{ fontSize: '0.8rem', color: '#DC2626', fontWeight: 600, marginTop: '0.25rem' }}>
+                                    Massa: {itemPedido.tipoMassa.nome}
+                                </div>
+                            )}
+                            {itemPedido.borda && (
+                                <div style={{ fontSize: '0.8rem', color: '#DC2626', fontWeight: 600 }}>
+                                    Borda: {itemPedido.borda.nome}
+                                </div>
+                            )}
+                        </li>
+                    );
+                })}
             </ul>
 
             <hr style={{margin: '0.5rem 0'}}/>
@@ -85,25 +105,32 @@ const PedidoCard = ({ pedido, onStatusChange }) => {
             {pedido.status === 1 && (
                 <>
                     <button style={{...buttonStyles, backgroundColor: '#e8a234', marginTop: '1rem'}} onClick={() => onStatusChange(pedido.id, 2)}>
-                        Iniciar Produção
+                        Colocar na Fila
                     </button>
                     {/* ✅ 2. ADIÇÃO DO BOTÃO DE CANCELAR */}
                     <button style={{...buttonStyles, backgroundColor: '#DC2626', marginTop: '0.5rem'}} onClick={handleCancelClick}>
                         Cancelar Pedido
                     </button>
+                    <WhatsAppButton pedido={pedido} statusAtual={1} />
                 </>
             )}
 
             {pedido.status === 2 && (
-                <button style={{...buttonStyles, backgroundColor: '#5ab44f', marginTop: '1rem'}} onClick={() => onStatusChange(pedido.id, 3)}>
-                    Pronto para Entrega
-                </button>
+                <>
+                    <button style={{...buttonStyles, backgroundColor: '#5ab44f', marginTop: '1rem'}} onClick={() => onStatusChange(pedido.id, 3)}>
+                        Pronto para Entrega
+                    </button>
+                    <WhatsAppButton pedido={pedido} statusAtual={2} />
+                </>
             )}
 
             {pedido.status === 3 && (
-                <button style={{...buttonStyles, backgroundColor: '#4B5563', marginTop: '1rem'}} onClick={() => onStatusChange(pedido.id, 4)}>
-                    Finalizar Pedido
-                </button>
+                <>
+                    <button style={{...buttonStyles, backgroundColor: '#4B5563', marginTop: '1rem'}} onClick={() => onStatusChange(pedido.id, 4)}>
+                        Finalizar Pedido
+                    </button>
+                    <WhatsAppButton pedido={pedido} statusAtual={3} />
+                </>
             )}
         </div>
     );

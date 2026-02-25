@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
 
 const statusInfo = {
     1: { texto: "Em Análise", cor: "#d4652f", emoji: "🧐" },
-    2: { texto: "Em Produção", cor: "#e8a234", emoji: "🧑‍🍳" },
+    2: { texto: "Na Fila", cor: "#e8a234", emoji: "🧑‍🍳" },
     3: { texto: "Pronto para Entrega", cor: "#5ab44f", emoji: "📦" },
     4: { texto: "Finalizado / Entregue", cor: "#4B5563", emoji: "✅" },
     5: { texto: "Cancelado", cor: "#DC2626", emoji: "❌" } 
@@ -64,6 +65,7 @@ const styles = {
 };
 
 const PedidosStatus = () => {
+    const navigate = useNavigate();
     const [telefone, setTelefone] = useState('');
     const [pedidos, setPedidos] = useState([]);
     const [nomeCliente, setNomeCliente] = useState('');
@@ -126,27 +128,44 @@ const PedidosStatus = () => {
 
     return (
         <div style={styles.container}>
-            {nomeCliente ? (
-                <h2 style={styles.greeting}>Olá, {nomeCliente}!</h2>
-            ) : (
-                <h2>Acompanhe seu Pedido</h2>
-            )}
+            <button
+                onClick={() => navigate('/')}
+                style={{
+                    padding: '0.5rem 1rem',
+                    fontSize: '0.875rem',
+                    backgroundColor: 'transparent',
+                    color: '#333',
+                    border: '1px solid #ddd',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    marginBottom: '1rem'
+                }}
+            >
+                ← Voltar
+            </button>
 
-            <p>Digite o número de telefone usado no pedido para ver o status.</p>
-            
-            <form onSubmit={handleFormSubmit}>
-                <input 
-                    type="tel"
-                    value={telefone}
-                    onChange={(e) => setTelefone(e.target.value)}
-                    placeholder="Ex: 38999998888"
-                    style={styles.input}
-                    required
-                />
-                <button type="submit" style={styles.button} disabled={isLoading}>
-                    {isLoading ? 'Buscando...' : 'Buscar Pedidos'}
-                </button>
-            </form>
+            <div style={{ position: 'relative' }}>
+                {nomeCliente ? (
+                    <h2 style={styles.greeting}>Olá, {nomeCliente}!</h2>
+                ) : (
+                    <h2>Acompanhe seu Pedido</h2>
+                )}
+
+                <p>Digite o número de telefone usado no pedido para ver o status.</p>
+
+                <form onSubmit={handleFormSubmit}>
+                    <input
+                        type="tel"
+                        value={telefone}
+                        onChange={(e) => setTelefone(e.target.value)}
+                        placeholder="Ex: 38999998888"
+                        style={styles.input}
+                        required
+                    />
+                    <button type="submit" style={styles.button} disabled={isLoading}>
+                        {isLoading ? 'Buscando...' : 'Buscar Pedidos'}
+                    </button>
+                </form>
 
             {error && <p style={{ color: 'red', textAlign: 'center', marginTop: '1rem' }}>{error}</p>}
 
@@ -156,7 +175,8 @@ const PedidosStatus = () => {
                     {pedidos.map(p => {
                         const subtotal = p.itens.reduce((total, itemPedido) => {
                             const precoDoItem = itemPedido.precoFinal ?? itemPedido.item?.preco ?? 0;
-                            return total + (precoDoItem * itemPedido.quantidade);
+                            const precoBordaDoItem = itemPedido.precoBorda ?? 0;
+                            return total + ((precoDoItem + precoBordaDoItem) * itemPedido.quantidade);
                         }, 0);
 
                         const valorTotal = subtotal + (p.taxaEntrega || 0);
@@ -180,17 +200,35 @@ const PedidosStatus = () => {
                                 <div>
                                     <strong>Itens:</strong>
                                     <ul style={{ listStyle: 'none', padding: 0, margin: '0.5rem 0', color: '#555' }}>
-                                        {p.itens.map(itemPedido => (
-                                            <li key={itemPedido.id} style={{ marginBottom: '0.25rem', display: 'flex', justifyContent: 'space-between' }}>
-                                                <span>
-                                                    {itemPedido.quantidade}x {itemPedido.item?.nome || 'Item não encontrado'}
-                                                    {itemPedido.tamanho && <strong style={{color: '#EA580C'}}> ({itemPedido.tamanho})</strong>}
-                                                </span>
-                                                <span>
-                                                    R$ {(itemPedido.precoFinal ?? itemPedido.item?.preco ?? 0).toFixed(2).replace('.', ',')}
-                                                </span>
-                                            </li>
-                                        ))}
+                                        {p.itens.map(itemPedido => {
+                                            const precoItem = itemPedido.precoFinal ?? itemPedido.item?.preco ?? 0;
+                                            const precoBordaItem = itemPedido.precoBorda ?? 0;
+                                            const precoTotalItem = precoItem + precoBordaItem;
+
+                                            return (
+                                                <li key={itemPedido.id} style={{ marginBottom: '0.75rem', paddingBottom: '0.5rem', borderBottom: '1px solid #eee' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                                        <span>
+                                                            {itemPedido.quantidade}x {itemPedido.item?.nome || 'Item não encontrado'}
+                                                            {itemPedido.tamanho && <strong style={{color: '#EA580C'}}> ({itemPedido.tamanho})</strong>}
+                                                        </span>
+                                                        <span style={{ fontWeight: 600 }}>
+                                                            R$ {precoTotalItem.toFixed(2).replace('.', ',')}
+                                                        </span>
+                                                    </div>
+                                                    {itemPedido.tipoMassa && (
+                                                        <div style={{ fontSize: '0.85rem', color: '#DC2626', fontWeight: 600, marginTop: '0.25rem' }}>
+                                                            Massa: {itemPedido.tipoMassa.nome}
+                                                        </div>
+                                                    )}
+                                                    {itemPedido.borda && (
+                                                        <div style={{ fontSize: '0.85rem', color: '#DC2626', fontWeight: 600 }}>
+                                                            Borda: {itemPedido.borda.nome}
+                                                        </div>
+                                                    )}
+                                                </li>
+                                            );
+                                        })}
                                     </ul>
                                 </div>
 
@@ -216,6 +254,7 @@ const PedidosStatus = () => {
                     })}
                 </div>
             )}
+            </div>
         </div>
     );
 };

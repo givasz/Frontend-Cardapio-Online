@@ -50,6 +50,7 @@ export const ScheduleProvider = ({ children }) => {
             } catch (err) {
                 setError(err.message);
                 console.error("Erro ao carregar horários:", err);
+                alert(`❌ Erro ao carregar horários da loja\n\n${err.message}`);
             } finally {
                 setLoading(false);
             }
@@ -88,7 +89,7 @@ export const ScheduleProvider = ({ children }) => {
 
         } catch (err) {
             console.error("Erro ao salvar horários:", err);
-            // Poderia adicionar um estado de erro para exibir na UI
+            alert(`❌ Erro ao salvar horários\n\n${err.message}\n\nPor favor, tente novamente.`);
         }
     };
 

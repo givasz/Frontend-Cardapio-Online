@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import styles from '../styles';
 import StyledButton from './StyledButton';
@@ -9,7 +10,8 @@ import PedidoManager from './pedidoManager';
 import PedidoHistorico from './PedidoHistorico'; // 1. IMPORTA O NOVO COMPONENTE
 import FreteManager from './freteManager'; // ✅ 1. IMPORTA O NOVO COMPONENTE
 
-const AdminDashboard = ({ setView }) => {
+const AdminDashboard = () => {
+    const navigate = useNavigate();
     const { logout } = useAuth();
     const [activeTab, setActiveTab] = useState('pedidos');
     
@@ -29,7 +31,7 @@ const AdminDashboard = ({ setView }) => {
             <header style={{backgroundColor: 'white', boxShadow: '0 1px 2px 0 rgba(0,0,0,0.05)'}}>
                  <div style={{...styles.container, display: 'flex', justifyContent: 'space-between', alignItems: 'center', height: '5rem'}}>
                     <h1 style={{fontSize: '1.25rem', fontWeight: 600, color: 'black'}}>Painel Admin</h1>
-                    <StyledButton onClick={() => { logout(); setView('menu'); }} variant="secondary">Sair</StyledButton>
+                    <StyledButton onClick={() => { logout(); navigate('/'); }} variant="secondary">Sair</StyledButton>
                 </div>
             </header>
             <main style={{...styles.container, padding: '2rem 1rem'}}>

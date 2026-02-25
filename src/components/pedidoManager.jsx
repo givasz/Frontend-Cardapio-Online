@@ -38,6 +38,7 @@ const PedidoManager = () => {
             setPedidos(data);
         } catch (error) {
             console.error("Erro:", error);
+            alert(`❌ Erro ao carregar pedidos\n\n${error.message}`);
         }
     };
 
@@ -63,11 +64,12 @@ const PedidoManager = () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`,
                 },
-                body: JSON.stringify({ status: novoStatus }),
+                body: JSON.stringify({ status: Number(novoStatus) }),
             });
 
             if (!response.ok) {
-                throw new Error('Falha ao atualizar status');
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Falha ao atualizar status');
             }
 
             // Após atualizar o status com sucesso, busca a lista de pedidos novamente
@@ -76,6 +78,7 @@ const PedidoManager = () => {
 
         } catch (error) {
             console.error("Erro ao mudar status:", error);
+            alert(`❌ Erro ao atualizar status do pedido\n\n${error.message}\n\nPor favor, tente novamente.`);
         }
     };
 
@@ -95,9 +98,9 @@ const PedidoManager = () => {
                     ))}
                 </div>
 
-                {/* Coluna "Em produção" */}
+                {/* Coluna "Na Fila" */}
                 <div style={{backgroundColor: '#e8a234', height: '100%', width: '30%',  display: 'flex', flexDirection: 'column', gap: '1.5rem', overflowY: 'auto'}}>
-                    <div style={{color: 'white', backgroundColor: '#0000003f', width: '100%', height: "10%", display: 'flex', justifyContent: "center", alignItems: "center", flexShrink: 0}}><h3>Em produção</h3></div>
+                    <div style={{color: 'white', backgroundColor: '#0000003f', width: '100%', height: "10%", display: 'flex', justifyContent: "center", alignItems: "center", flexShrink: 0}}><h3>Na Fila</h3></div>
                     {/* ATUALIZAÇÃO 8: Mapear e exibir os pedidos com status 2 */}
                     {pedidos.filter(p => p.status === 2).map(pedido => (
                         <PedidoCard key={pedido.id} pedido={pedido} onStatusChange={handleStatusChange} />
