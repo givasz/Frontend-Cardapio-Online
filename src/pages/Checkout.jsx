@@ -87,9 +87,18 @@ const Checkout = () => {
 
         const savedData = localStorage.getItem('customerData');
         if (savedData) {
-            const { nomeCliente, telefone, endereco } = JSON.parse(savedData);
-            setFormData({ nomeCliente: nomeCliente || '', telefone: telefone || '', endereco: endereco || '', observacoes: '' });
-            setDeliveryOption('delivery');
+            const parsed = JSON.parse(savedData);
+            const option = parsed.savedDeliveryOption || 'delivery';
+            // Ignora endereco que seja só números (número de mesa salvo por engano)
+            const enderecoVal = (parsed.endereco || '').trim();
+            const enderecoLimpo = /^\d+$/.test(enderecoVal) ? '' : enderecoVal;
+            setDeliveryOption(option);
+            setFormData({
+                nomeCliente: parsed.nomeCliente || '',
+                telefone: parsed.telefone || '',
+                endereco: option === 'delivery' ? enderecoLimpo : '',
+                observacoes: ''
+            });
         }
     }, [cartItems, total, clearCart, navigate]);
 
@@ -155,13 +164,12 @@ const Checkout = () => {
             const res = await r.json();
             setSuccess({ message: `Pedido #${res.pedidoId} realizado com sucesso!`, pedidoId: res.pedidoId, paymentMethod });
 
-            if (deliveryOption === 'delivery') {
-                localStorage.setItem('customerData', JSON.stringify({
-                    nomeCliente: formData.nomeCliente,
-                    telefone: formData.telefone,
-                    endereco: formData.endereco,
-                }));
-            }
+            localStorage.setItem('customerData', JSON.stringify({
+                nomeCliente: formData.nomeCliente,
+                telefone: formData.telefone,
+                endereco: deliveryOption === 'delivery' ? formData.endereco : '',
+                savedDeliveryOption: deliveryOption,
+            }));
 
             if (paymentMethod !== 'Pix') {
                 clearCart();
@@ -521,11 +529,13 @@ const Checkout = () => {
                                             </label>
                                             <input
                                                 style={styles.input}
-                                                type="number"
+                                                type="text"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
                                                 id="tableNumber"
                                                 name="tableNumber"
                                                 value={tableNumber}
-                                                onChange={(e) => setTableNumber(e.target.value)}
+                                                onChange={(e) => setTableNumber(e.target.value.replace(/\D/g, ''))}
                                                 placeholder="Informe o nº da mesa"
                                                 required
                                             />

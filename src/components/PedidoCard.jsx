@@ -54,7 +54,10 @@ const PedidoCard = ({ pedido, onStatusChange }) => {
         <div style={cardStyles}>
             <p><strong>Pedido #{pedido.id}</strong> - {formatarData(pedido.criadoEm)}</p>
             <p><strong>Cliente:</strong> {pedido.nomeCliente}</p>
-            <p><strong>Endereço:</strong> {pedido.endereco}</p>
+            {pedido.endereco?.startsWith('Mesa:')
+                ? <p><strong>Mesa:</strong> {pedido.endereco.replace(/^Mesa:\s*/i, '')}</p>
+                : <p><strong>Endereço:</strong> {pedido.endereco}</p>
+            }
             
             <hr style={{margin: '0.5rem 0'}}/>
 

@@ -9,6 +9,7 @@ import ScheduleManager from './ScheduleManager';
 import PedidoManager from './pedidoManager';
 import PedidoHistorico from './PedidoHistorico'; // 1. IMPORTA O NOVO COMPONENTE
 import FreteManager from './freteManager'; // ✅ 1. IMPORTA O NOVO COMPONENTE
+import MesaManager from './MesaManager';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -38,7 +39,7 @@ const AdminDashboard = () => {
                 <div style={{borderBottom: '1px solid #E5E7EB', marginBottom: '1.5rem'}}>
                     <nav style={{display: 'flex', gap: '2rem', flexWrap: 'wrap'}}>
                         <button onClick={() => setActiveTab('pedidos')} style={getTabStyle('pedidos')}>Pedidos Ativos</button>
-                        
+                        <button onClick={() => setActiveTab('mesas')} style={getTabStyle('mesas')}>Mesas</button>
                         <button onClick={() => setActiveTab('historico')} style={getTabStyle('historico')}>Histórico</button>
 
                         <button onClick={() => setActiveTab('items')} style={getTabStyle('items')}>Itens</button>
@@ -49,7 +50,7 @@ const AdminDashboard = () => {
                 </div>
                 <div>
                     {activeTab === 'pedidos' && <PedidoManager />}
-                    
+                    {activeTab === 'mesas' && <MesaManager />}
                     {activeTab === 'historico' && <PedidoHistorico />}
 
                     {activeTab === 'items' && <ItemManager />}
