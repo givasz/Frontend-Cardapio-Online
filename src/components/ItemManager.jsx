@@ -14,6 +14,7 @@ const ItemManager = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
     const [movingItemId, setMovingItemId] = useState(null);
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
     // 1. ATUALIZADO PARA USAR A NOVA ROTA DE ADMIN E SER MAIS EFICIENTE
     const fetchData = useCallback(async () => {
@@ -48,15 +49,15 @@ const ItemManager = () => {
     };
 
     const handleDelete = async (itemId) => {
-        if (!window.confirm('Tem certeza que deseja excluir este item?')) return;
         try {
-            const response = await fetch(`${API_BASE_URL}/admin/item/${itemId}`, { 
-                method: 'DELETE', 
-                headers: { 'Authorization': `Bearer ${token}` } 
+            const response = await fetch(`${API_BASE_URL}/admin/item/${itemId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) throw new Error('Falha ao excluir o item.');
+            setConfirmDeleteId(null);
             fetchData();
-        } catch (err) { alert(`❌ Erro ao excluir item\n\n${err.message}\n\nPor favor, tente novamente.`); }
+        } catch (err) { setError(err.message); }
     };
 
     // 2. NOVA FUNÇÃO PARA ALTERNAR A DISPONIBILIDADE DO ITEM
@@ -71,9 +72,23 @@ const ItemManager = () => {
                 body: JSON.stringify({ ...item, disponivel: !item.disponivel })
             });
             if (!response.ok) throw new Error('Falha ao atualizar o status.');
-            fetchData(); // Recarrega a lista para mostrar a mudança
+            fetchData();
         } catch (err) {
-            alert(`❌ Erro ao alterar disponibilidade\n\n${err.message}\n\nPor favor, tente novamente.`);
+            setError(err.message);
+        }
+    };
+
+    const handleTogglePromo = async (item) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/admin/item/${item.id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ ...item, promocaoAtiva: !item.promocaoAtiva }),
+            });
+            if (!response.ok) throw new Error('Falha ao atualizar promoção.');
+            fetchData();
+        } catch (err) {
+            setError(err.message);
         }
     };
 
@@ -96,7 +111,7 @@ const ItemManager = () => {
 
             await fetchData();
         } catch (err) {
-            alert(`❌ Erro ao reordenar item\n\n${err.message}\n\nPor favor, tente novamente.`);
+            setError(err.message);
         } finally {
             setMovingItemId(null);
         }
@@ -181,8 +196,26 @@ const ItemManager = () => {
                                                             </StyledButton>
                                                         </div>
                                                     </td>
-                                                    <td style={{...styles.tableBodyCell, fontWeight: 500, color: '#111827'}}>{item.nome}</td>
-                                                    <td style={styles.tableBodyCell}>R$ {item.preco.toFixed(2)}</td>
+                                                    <td style={{...styles.tableBodyCell, fontWeight: 500, color: '#111827'}}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                                            {item.nome}
+                                                            {item.promocaoAtiva && item.descontoPercent && (
+                                                                <span style={{ backgroundColor: '#DCFCE7', color: '#16A34A', fontSize: '0.65rem', fontWeight: 800, padding: '0.1rem 0.45rem', borderRadius: '9999px', letterSpacing: '0.04em' }}>
+                                                                    -{item.descontoPercent}%
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                    <td style={styles.tableBodyCell}>
+                                                        {item.promocaoAtiva && item.descontoPercent ? (
+                                                            <div>
+                                                                <span style={{ textDecoration: 'line-through', color: '#9CA3AF', fontSize: '0.75rem' }}>R$ {item.preco.toFixed(2)}</span>
+                                                                <span style={{ display: 'block', fontWeight: 700, color: '#16A34A' }}>R$ {(item.preco * (1 - item.descontoPercent / 100)).toFixed(2)}</span>
+                                                            </div>
+                                                        ) : (
+                                                            `R$ ${item.preco.toFixed(2)}`
+                                                        )}
+                                                    </td>
                                                     <td style={styles.tableBodyCell}>
                                                         <span style={{
                                                             backgroundColor: item.disponivel ? '#D1FAE5' : '#FEE2E2',
@@ -196,18 +229,36 @@ const ItemManager = () => {
                                                         </span>
                                                     </td>
                                                     <td style={styles.tableBodyCell}>
-                                                        <div style={{display: 'flex', gap: '0.25rem'}}>
-                                                            <StyledButton
-                                                                variant="secondary"
-                                                                onClick={() => handleToggleAvailability(item)}
-                                                                title={item.disponivel ? 'Pausar item' : 'Ativar item'}
-                                                                style={{ padding: '0.5rem 0.75rem', fontSize: '0.875rem' }}
-                                                            >
-                                                                {item.disponivel ? 'Pausar' : 'Ativar'}
-                                                            </StyledButton>
-                                                            <StyledButton variant="ghost" onClick={() => handleOpenForm(item)} title="Editar item"><EditIcon style={{color: '#777777ff', width: '1.25rem', height: '1.25rem'}}/></StyledButton>
-                                                            <StyledButton variant="ghost" onClick={() => handleDelete(item.id)} title="Excluir item" style={{color: '#DC2626'}}><TrashIcon style={{width: '1.25rem', height: '1.25rem'}}/></StyledButton>
-                                                        </div>
+                                                        {confirmDeleteId === item.id ? (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                                <span style={{ fontSize: '0.78rem', color: '#DC2626', fontWeight: 600 }}>Excluir?</span>
+                                                                <button onClick={() => handleDelete(item.id)} style={{ padding: '0.3rem 0.6rem', backgroundColor: '#DC2626', color: 'white', border: 'none', borderRadius: '0.35rem', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Sim</button>
+                                                                <button onClick={() => setConfirmDeleteId(null)} style={{ padding: '0.3rem 0.6rem', backgroundColor: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB', borderRadius: '0.35rem', cursor: 'pointer', fontSize: '0.78rem' }}>Não</button>
+                                                            </div>
+                                                        ) : (
+                                                            <div style={{display: 'flex', gap: '0.25rem', flexWrap: 'wrap'}}>
+                                                                <StyledButton
+                                                                    variant="secondary"
+                                                                    onClick={() => handleToggleAvailability(item)}
+                                                                    title={item.disponivel ? 'Pausar item' : 'Ativar item'}
+                                                                    style={{ padding: '0.5rem 0.75rem', fontSize: '0.875rem' }}
+                                                                >
+                                                                    {item.disponivel ? 'Pausar' : 'Ativar'}
+                                                                </StyledButton>
+                                                                {item.descontoPercent && (
+                                                                    <StyledButton
+                                                                        variant="secondary"
+                                                                        onClick={() => handleTogglePromo(item)}
+                                                                        title={item.promocaoAtiva ? 'Desativar promoção' : 'Ativar promoção'}
+                                                                        style={{ padding: '0.5rem 0.75rem', fontSize: '0.875rem', backgroundColor: item.promocaoAtiva ? '#DCFCE7' : undefined, color: item.promocaoAtiva ? '#16A34A' : undefined }}
+                                                                    >
+                                                                        {item.promocaoAtiva ? 'Promo ON' : 'Promo OFF'}
+                                                                    </StyledButton>
+                                                                )}
+                                                                <StyledButton variant="ghost" onClick={() => handleOpenForm(item)} title="Editar item"><EditIcon style={{color: '#777777ff', width: '1.25rem', height: '1.25rem'}}/></StyledButton>
+                                                                <StyledButton variant="ghost" onClick={() => setConfirmDeleteId(item.id)} title="Excluir item" style={{color: '#DC2626'}}><TrashIcon style={{width: '1.25rem', height: '1.25rem'}}/></StyledButton>
+                                                            </div>
+                                                        )}
                                                     </td>
                                                 </tr>
                                             ))}

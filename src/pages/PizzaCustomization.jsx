@@ -116,23 +116,30 @@ const PizzaCustomization = () => {
         return precoComBorda - precoSemBorda;
     }, [selectedBordaId, selectedFlavors, selectedSize]);
 
-    const finalPrice = useMemo(() => {
-        if (selectedFlavors.length === 0) return 0;
+    const { finalPrice, finalPriceRaw, activePromo } = useMemo(() => {
+        if (selectedFlavors.length === 0) return { finalPrice: 0, finalPriceRaw: 0, activePromo: null };
 
         const priceKey = priceFieldMap[selectedSize];
         const priceKeyComBorda = `${priceKey}ComBorda`;
 
-        // Se tem borda selecionada E a pizza tem preço com borda, usa preço com borda
+        let rawPrice;
         if (selectedBordaId && selectedFlavors.some(f => f[priceKeyComBorda])) {
-            const pricesForSize = selectedFlavors.map(flavor =>
-                flavor[priceKeyComBorda] || flavor[priceKey] || flavor.preco
-            );
-            return Math.max(...pricesForSize);
+            rawPrice = Math.max(...selectedFlavors.map(f => f[priceKeyComBorda] || f[priceKey] || f.preco));
         } else {
-            // Sem borda ou pizza não tem opção de borda
-            const pricesForSize = selectedFlavors.map(flavor => flavor[priceKey] || flavor.preco);
-            return Math.max(...pricesForSize);
+            rawPrice = Math.max(...selectedFlavors.map(f => f[priceKey] || f.preco));
         }
+
+        // Desconto do sabor mais caro (por tamanho)
+        const sizeDiscountField = { P: 'descontoPPercent', M: 'descontoMPercent', G: 'descontoGPercent', GG: 'descontoGGPercent' }[selectedSize];
+        const mostExpensive = selectedFlavors.reduce((max, f) => {
+            const p = f[priceKey] || f.preco;
+            return p > (max[priceKey] || max.preco) ? f : max;
+        }, selectedFlavors[0]);
+        const sizeDiscountValue = mostExpensive.promocaoAtiva && mostExpensive[sizeDiscountField] ? mostExpensive[sizeDiscountField] : null;
+        const promo = sizeDiscountValue ? { ...mostExpensive, descontoPercent: sizeDiscountValue } : null;
+        const discounted = promo ? rawPrice * (1 - sizeDiscountValue / 100) : rawPrice;
+
+        return { finalPrice: discounted, finalPriceRaw: rawPrice, activePromo: promo };
     }, [selectedFlavors, selectedSize, selectedBordaId]);
 
     const handleAddToCart = () => {
@@ -148,7 +155,13 @@ const PizzaCustomization = () => {
         }, selectedFlavors[0]);
 
         // Preço base da pizza (sem borda)
-        const pizzaBasePrice = Math.max(...selectedFlavors.map(f => f[priceKey] || f.preco));
+        const pizzaBasePriceRaw = Math.max(...selectedFlavors.map(f => f[priceKey] || f.preco));
+        // Aplica desconto por tamanho se ativo
+        const cartSizeDiscountField = { P: 'descontoPPercent', M: 'descontoMPercent', G: 'descontoGPercent', GG: 'descontoGGPercent' }[selectedSize];
+        const cartDiscount = mostExpensiveFlavor.promocaoAtiva && mostExpensiveFlavor[cartSizeDiscountField] ? mostExpensiveFlavor[cartSizeDiscountField] : null;
+        const pizzaBasePrice = cartDiscount
+            ? pizzaBasePriceRaw * (1 - cartDiscount / 100)
+            : pizzaBasePriceRaw;
 
         const customPizza = {
             baseItemId: mostExpensiveFlavor.id,
@@ -213,7 +226,7 @@ const PizzaCustomization = () => {
 
                     <div style={{padding: '1.5rem', flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
                         {/* SELEÇÃO DE TAMANHO + SABORES ESCOLHIDOS */}
-                        <div style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
+                        <div className="pizza-custom-flex-row" style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
                             {/* TAMANHO */}
                             <div style={{ backgroundColor: '#FEF2F2', padding: '0.75rem', borderRadius: '0.75rem', border: '2px solid #FEE2E2', flex: '0 0 auto' }}>
                                 <label style={{...styles.label, fontSize: '0.875rem', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem'}}>
@@ -286,7 +299,13 @@ const PizzaCustomization = () => {
                                     const isSelected = selectedFlavors.some(f => f.id === flavor.id);
                                     const isDisabled = !isSelected && selectedFlavors.length >= maxFlavors;
                                     const priceKey = priceFieldMap[selectedSize];
-                                    const displayPrice = flavor[priceKey] || flavor.preco;
+                                    const rawPrice = flavor[priceKey] || flavor.preco;
+                                    const sizeDiscountField = { P: 'descontoPPercent', M: 'descontoMPercent', G: 'descontoGPercent', GG: 'descontoGGPercent' }[selectedSize];
+                                    const sizeDiscount = flavor.promocaoAtiva && flavor[sizeDiscountField] ? flavor[sizeDiscountField] : null;
+                                    const hasPromo = !!sizeDiscount;
+                                    const displayPrice = hasPromo
+                                        ? rawPrice * (1 - sizeDiscount / 100)
+                                        : rawPrice;
 
                                     return (
                                         <div
@@ -294,7 +313,7 @@ const PizzaCustomization = () => {
                                             style={{
                                                 padding: '0.65rem',
                                                 display: 'flex',
-                                                alignItems: 'center',
+                                                alignItems: 'flex-start',
                                                 gap: '0.65rem',
                                                 opacity: isDisabled ? 0.4 : 1,
                                                 cursor: isDisabled ? 'not-allowed' : 'pointer',
@@ -325,24 +344,59 @@ const PizzaCustomization = () => {
                                                 style={{
                                                     flexGrow: 1,
                                                     cursor: isDisabled ? 'not-allowed' : 'pointer',
-                                                    fontWeight: isSelected ? '700' : '500',
-                                                    fontSize: '0.9rem',
-                                                    color: isSelected ? '#DC2626' : '#1F2937'
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    gap: '0.15rem'
                                                 }}
                                             >
-                                                {flavor.nome}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                    <span style={{
+                                                        fontWeight: isSelected ? '700' : '500',
+                                                        fontSize: '0.9rem',
+                                                        color: isSelected ? '#DC2626' : '#1F2937',
+                                                    }}>
+                                                        {flavor.nome}
+                                                    </span>
+                                                    {hasPromo && (
+                                                        <span style={{
+                                                            backgroundColor: '#16A34A',
+                                                            color: 'white',
+                                                            fontSize: '0.65rem',
+                                                            fontWeight: 700,
+                                                            padding: '0.1rem 0.35rem',
+                                                            borderRadius: '0.25rem'
+                                                        }}>-{sizeDiscount}%</span>
+                                                    )}
+                                                </div>
+                                                {flavor.descricao && (
+                                                    <span style={{
+                                                        fontSize: '0.72rem',
+                                                        color: '#6B7280',
+                                                        fontWeight: 400,
+                                                        lineHeight: 1.3
+                                                    }}>
+                                                        {flavor.descricao}
+                                                    </span>
+                                                )}
                                             </label>
-                                            <span style={{
-                                                fontWeight: '700',
-                                                fontSize: '0.9rem',
-                                                color: '#DC2626',
-                                                backgroundColor: '#FEF2F2',
-                                                padding: '0.35rem 0.65rem',
-                                                borderRadius: '0.375rem',
-                                                flexShrink: 0
-                                            }}>
-                                                R$ {displayPrice.toFixed(2)}
-                                            </span>
+                                            <div style={{ textAlign: 'right', flexShrink: 0, alignSelf: 'center' }}>
+                                                {hasPromo && (
+                                                    <div style={{ fontSize: '0.7rem', color: '#9CA3AF', textDecoration: 'line-through', lineHeight: 1 }}>
+                                                        R$ {rawPrice.toFixed(2)}
+                                                    </div>
+                                                )}
+                                                <span style={{
+                                                    fontWeight: '700',
+                                                    fontSize: '0.9rem',
+                                                    color: hasPromo ? '#16A34A' : '#DC2626',
+                                                    backgroundColor: hasPromo ? '#F0FDF4' : '#FEF2F2',
+                                                    padding: '0.35rem 0.65rem',
+                                                    borderRadius: '0.375rem',
+                                                    display: 'inline-block'
+                                                }}>
+                                                    R$ {displayPrice.toFixed(2)}
+                                                </span>
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -351,7 +405,7 @@ const PizzaCustomization = () => {
 
                         {/* TIPO DE MASSA E BORDA LADO A LADO */}
                         {(tiposMassa.length > 0 || bordas.length > 0) && (
-                            <div style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
+                            <div className="pizza-custom-flex-row" style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
                                 {/* TIPO DE MASSA */}
                                 {tiposMassa.length > 0 && (
                                     <div style={{ backgroundColor: '#FEF2F2', padding: '0.75rem', borderRadius: '0.75rem', border: '2px solid #FEE2E2', flex: 1 }}>
@@ -418,7 +472,7 @@ const PizzaCustomization = () => {
                     </div>
 
                     {/* FOOTER FIXO */}
-                    <div style={{
+                    <div className="pizza-custom-footer" style={{
                         padding: '1.25rem 1.5rem',
                         borderTop: '3px solid #FEE2E2',
                         display: 'flex',
@@ -428,9 +482,19 @@ const PizzaCustomization = () => {
                         gap: '1rem',
                         flexShrink: 0
                     }}>
-                        <div>
+                        <div className="pizza-custom-footer-price">
                             <span style={{fontSize: '0.875rem', color: '#991B1B', display: 'block', fontWeight: 600, marginBottom: '0.15rem'}}>Total da Pizza</span>
-                            <p style={{fontSize: '2rem', fontWeight: 'bold', color: '#DC2626', margin: 0, lineHeight: 1}}>
+                            {activePromo && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.1rem' }}>
+                                    <span style={{ fontSize: '0.95rem', color: '#9CA3AF', textDecoration: 'line-through' }}>
+                                        R$ {finalPriceRaw.toFixed(2)}
+                                    </span>
+                                    <span style={{ backgroundColor: '#16A34A', color: 'white', fontSize: '0.65rem', fontWeight: 700, padding: '0.1rem 0.4rem', borderRadius: '0.25rem' }}>
+                                        -{activePromo.descontoPercent}%
+                                    </span>
+                                </div>
+                            )}
+                            <p style={{fontSize: '2rem', fontWeight: 'bold', color: activePromo ? '#16A34A' : '#DC2626', margin: 0, lineHeight: 1}}>
                                 R$ {finalPrice.toFixed(2)}
                             </p>
                         </div>

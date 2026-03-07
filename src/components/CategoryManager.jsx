@@ -14,8 +14,9 @@ const CategoryManager = () => {
     const [newCategoryName, setNewCategoryName] = useState('');
 
     // 2. Estados para controlar a edição
-    const [editingCategoryId, setEditingCategoryId] = useState(null); // Guarda o ID da categoria em edição
-    const [updatedCategoryName, setUpdatedCategoryName] = useState(''); // Guarda o novo nome da categoria
+    const [editingCategoryId, setEditingCategoryId] = useState(null);
+    const [updatedCategoryName, setUpdatedCategoryName] = useState('');
+    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
 
     const fetchCategories = useCallback(async () => {
         setIsLoading(true);
@@ -48,25 +49,25 @@ const CategoryManager = () => {
             setNewCategoryName('');
             fetchCategories();
         } catch (err) {
-            alert(`❌ Erro ao criar categoria\n\n${err.message}\n\nPor favor, tente novamente.`);
+            setError(err.message);
         }
     };
 
     // 3. Função para DELETAR uma categoria (similar ao ItemManager)
     const handleDelete = async (categoryId) => {
-        if (!window.confirm('Tem certeza que deseja excluir esta categoria? Isso pode afetar itens associados a ela.')) return;
         try {
             const response = await fetch(`${API_BASE_URL}/admin/categoria/${categoryId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (!response.ok) {
-                 const errorData = await response.json();
-                 throw new Error(errorData.message || 'Falha ao excluir a categoria.');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Falha ao excluir a categoria.');
             }
-            fetchCategories(); // Atualiza a lista
+            setConfirmDeleteId(null);
+            fetchCategories();
         } catch (err) {
-            alert(`❌ Erro ao excluir categoria\n\n${err.message}\n\nPor favor, tente novamente.`);
+            setError(err.message);
         }
     };
 
@@ -85,7 +86,7 @@ const CategoryManager = () => {
              setUpdatedCategoryName('');
              fetchCategories(); // Atualiza a lista
         } catch (err) {
-             alert(`❌ Erro ao atualizar categoria\n\n${err.message}\n\nPor favor, tente novamente.`);
+            setError(err.message);
         }
     };
 
@@ -130,14 +131,22 @@ const CategoryManager = () => {
                                 ) : (
                                     <>
                                         <span style={{ color: 'black' }}>{cat.nome}</span>
-                                        <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                            <StyledButton variant="ghost" onClick={() => handleStartEdit(cat)} title="Editar categoria">
-                                                <EditIcon style={{ color: '#777777ff', width: '1.25rem', height: '1.25rem' }} />
-                                            </StyledButton>
-                                            <StyledButton variant="ghost" onClick={() => handleDelete(cat.id)} title="Excluir categoria" style={{ color: '#DC2626' }}>
-                                                <TrashIcon style={{ width: '1.25rem', height: '1.25rem' }} />
-                                            </StyledButton>
-                                        </div>
+                                        {confirmDeleteId === cat.id ? (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                                <span style={{ fontSize: '0.78rem', color: '#DC2626', fontWeight: 600 }}>Excluir?</span>
+                                                <button onClick={() => handleDelete(cat.id)} style={{ padding: '0.3rem 0.6rem', backgroundColor: '#DC2626', color: 'white', border: 'none', borderRadius: '0.35rem', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}>Sim</button>
+                                                <button onClick={() => setConfirmDeleteId(null)} style={{ padding: '0.3rem 0.6rem', backgroundColor: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB', borderRadius: '0.35rem', cursor: 'pointer', fontSize: '0.78rem' }}>Não</button>
+                                            </div>
+                                        ) : (
+                                            <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                                <StyledButton variant="ghost" onClick={() => handleStartEdit(cat)} title="Editar categoria">
+                                                    <EditIcon style={{ color: '#777777ff', width: '1.25rem', height: '1.25rem' }} />
+                                                </StyledButton>
+                                                <StyledButton variant="ghost" onClick={() => setConfirmDeleteId(cat.id)} title="Excluir categoria" style={{ color: '#DC2626' }}>
+                                                    <TrashIcon style={{ width: '1.25rem', height: '1.25rem' }} />
+                                                </StyledButton>
+                                            </div>
+                                        )}
                                     </>
                                 )}
                             </li>

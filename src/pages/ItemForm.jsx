@@ -17,12 +17,51 @@ const ItemForm = () => {
     const [formData, setFormData] = useState({
         nome: '', descricao: '', preco: '', categoriaId: '', imagemUrl: '', disponivel: true,
         precoP: '', precoM: '', precoG: '', precoGG: '',
-        precoPComBorda: '', precoMComBorda: '', precoGComBorda: '', precoGGComBorda: ''
+        precoPComBorda: '', precoMComBorda: '', precoGComBorda: '', precoGGComBorda: '',
+        promocaoAtiva: false, descontoPercent: '',
+        descontoPPercent: '', descontoMPercent: '', descontoGPercent: '', descontoGGPercent: '',
     });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [imageMode, setImageMode] = useState('url'); // 'url' | 'file'
 
     const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value });
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const MAX_SIZE = 500;
+                let { width, height } = img;
+                if (width > MAX_SIZE || height > MAX_SIZE) {
+                    if (width > height) {
+                        height = Math.round((height * MAX_SIZE) / width);
+                        width = MAX_SIZE;
+                    } else {
+                        width = Math.round((width * MAX_SIZE) / height);
+                        height = MAX_SIZE;
+                    }
+                }
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                // Tenta qualidades progressivamente menores até caber (~300KB em base64 ≈ ~220KB real)
+                let quality = 0.72;
+                let dataUrl;
+                do {
+                    dataUrl = canvas.toDataURL('image/jpeg', quality);
+                    quality -= 0.1;
+                } while (dataUrl.length > 400_000 && quality > 0.2);
+                setFormData(prev => ({ ...prev, imagemUrl: dataUrl }));
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+    };
 
     useEffect(() => {
         if (!categories) {
@@ -45,14 +84,22 @@ const ItemForm = () => {
                 precoGGComBorda: item.precoGGComBorda || '',
                 categoriaId: item.categoriaId || '',
                 imagemUrl: item.imagemUrl || '',
-                disponivel: item.disponivel ?? true
+                disponivel: item.disponivel ?? true,
+                promocaoAtiva: item.promocaoAtiva ?? false,
+                descontoPercent: item.descontoPercent ?? '',
+                descontoPPercent: item.descontoPPercent ?? '',
+                descontoMPercent: item.descontoMPercent ?? '',
+                descontoGPercent: item.descontoGPercent ?? '',
+                descontoGGPercent: item.descontoGGPercent ?? '',
             });
         } else {
             setFormData({
                 nome: '', descricao: '', preco: '', imagemUrl: '', disponivel: true,
                 precoP: '', precoM: '', precoG: '', precoGG: '',
                 precoPComBorda: '', precoMComBorda: '', precoGComBorda: '', precoGGComBorda: '',
-                categoriaId: categories.length > 0 ? categories[0].id : ''
+                categoriaId: categories.length > 0 ? categories[0].id : '',
+                promocaoAtiva: false, descontoPercent: '',
+                descontoPPercent: '', descontoMPercent: '', descontoGPercent: '', descontoGGPercent: '',
             });
         }
     }, [item, categories, navigate]);
@@ -73,7 +120,9 @@ const ItemForm = () => {
             descricao: formData.descricao,
             imagemUrl: formData.imagemUrl,
             disponivel: formData.disponivel,
-            categoriaId: parseInt(formData.categoriaId)
+            categoriaId: parseInt(formData.categoriaId),
+            promocaoAtiva: formData.promocaoAtiva,
+            descontoPercent: formData.descontoPercent ? parseFloat(formData.descontoPercent) : null,
         };
 
         if (isPizzaCategory) {
@@ -87,6 +136,10 @@ const ItemForm = () => {
             body.precoMComBorda = formData.precoMComBorda ? parseFloat(formData.precoMComBorda) : null;
             body.precoGComBorda = formData.precoGComBorda ? parseFloat(formData.precoGComBorda) : null;
             body.precoGGComBorda = formData.precoGGComBorda ? parseFloat(formData.precoGGComBorda) : null;
+            body.descontoPPercent = formData.descontoPPercent ? parseFloat(formData.descontoPPercent) : null;
+            body.descontoMPercent = formData.descontoMPercent ? parseFloat(formData.descontoMPercent) : null;
+            body.descontoGPercent = formData.descontoGPercent ? parseFloat(formData.descontoGPercent) : null;
+            body.descontoGGPercent = formData.descontoGGPercent ? parseFloat(formData.descontoGGPercent) : null;
         } else {
             body.preco = parseFloat(formData.preco) || 0;
             body.precoP = null;
@@ -106,7 +159,9 @@ const ItemForm = () => {
         }
 
         try {
-            const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify(body) });
+            const activeToken = token || localStorage.getItem('admin_token');
+            const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${activeToken}` }, body: JSON.stringify(body) });
+            if (response.status === 401) { setError('Sessão expirada. Faça logout e login novamente.'); setIsLoading(false); return; }
             if (!response.ok) { const errData = await response.json(); throw new Error(errData.error || 'Falha ao salvar o item.'); }
             navigate('/adm');
         } catch (err) { setError(err.message); } finally { setIsLoading(false); }
@@ -130,7 +185,7 @@ const ItemForm = () => {
                 }}>
                     <div style={{
                         ...styles.modalHeader,
-                        backgroundColor: '#EA580C',
+                        backgroundColor: '#DC2626',
                         color: 'white',
                         padding: '1.5rem'
                     }}>
@@ -345,29 +400,111 @@ const ItemForm = () => {
 
                             <div>
                                 <label style={{...styles.label, display: 'block', marginBottom: '0.5rem'}}>
-                                    URL da Imagem (Opcional)
+                                    Imagem (Opcional)
                                 </label>
-                                <input
-                                    style={styles.input}
-                                    name="imagemUrl"
-                                    value={formData.imagemUrl}
-                                    onChange={handleChange}
-                                    placeholder="https://exemplo.com/imagem.jpg"
-                                />
-                                <div style={{marginTop: '1rem', textAlign: 'center'}}>
-                                    <img
-                                        src={formData.imagemUrl || PLACEHOLDER_IMAGE}
-                                        alt="Pré-visualização"
-                                        style={{
-                                            width: '200px',
-                                            height: '200px',
-                                            objectFit: 'cover',
-                                            borderRadius: '0.5rem',
-                                            border: '2px solid #E5E7EB',
-                                            background: '#F3F4F6'
-                                        }}
-                                    />
+                                {/* Toggle URL / Arquivo */}
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                    {['url', 'file'].map(mode => (
+                                        <button
+                                            key={mode}
+                                            type="button"
+                                            onClick={() => setImageMode(mode)}
+                                            style={{
+                                                padding: '0.35rem 1rem',
+                                                borderRadius: '9999px',
+                                                border: '1.5px solid',
+                                                borderColor: imageMode === mode ? '#DC2626' : '#D1D5DB',
+                                                backgroundColor: imageMode === mode ? '#FEF2F2' : 'white',
+                                                color: imageMode === mode ? '#DC2626' : '#6B7280',
+                                                fontWeight: imageMode === mode ? 700 : 400,
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
+                                            }}
+                                        >
+                                            {mode === 'url' ? 'URL' : 'Upload do computador'}
+                                        </button>
+                                    ))}
                                 </div>
+
+                                {imageMode === 'url' ? (
+                                    <input
+                                        style={styles.input}
+                                        name="imagemUrl"
+                                        value={formData.imagemUrl}
+                                        onChange={handleChange}
+                                        placeholder="https://exemplo.com/imagem.jpg"
+                                    />
+                                ) : (
+                                    <div style={{
+                                        border: '2px dashed #D1D5DB',
+                                        borderRadius: '0.5rem',
+                                        padding: '1.25rem',
+                                        textAlign: 'center',
+                                        backgroundColor: '#F9FAFB',
+                                        cursor: 'pointer',
+                                    }}>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleFileChange}
+                                            style={{ display: 'none' }}
+                                            id="imageFileInput"
+                                        />
+                                        <label htmlFor="imageFileInput" style={{ cursor: 'pointer' }}>
+                                            <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📷</div>
+                                            <p style={{ color: '#6B7280', fontSize: '0.875rem', marginBottom: '0.25rem' }}>
+                                                Clique para selecionar uma imagem
+                                            </p>
+                                            <p style={{ color: '#9CA3AF', fontSize: '0.75rem' }}>
+                                                JPG, PNG, WebP — será comprimida automaticamente
+                                            </p>
+                                        </label>
+                                    </div>
+                                )}
+
+                                {/* Preview */}
+                                <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
+                                    <div style={{
+                                        width: '240px',
+                                        aspectRatio: '4/3',
+                                        borderRadius: '0.5rem',
+                                        border: '2px solid #E5E7EB',
+                                        overflow: 'hidden',
+                                        backgroundColor: '#F3F4F6',
+                                        position: 'relative',
+                                    }}>
+                                        <img
+                                            src={formData.imagemUrl || PLACEHOLDER_IMAGE}
+                                            alt="Pré-visualização"
+                                            style={{
+                                                position: 'absolute',
+                                                inset: 0,
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'cover',
+                                                objectPosition: 'center',
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                                {formData.imagemUrl && (
+                                    <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData(prev => ({ ...prev, imagemUrl: '' }))}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                color: '#9CA3AF',
+                                                fontSize: '0.8rem',
+                                                cursor: 'pointer',
+                                                textDecoration: 'underline',
+                                            }}
+                                        >
+                                            Remover imagem
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
                             <div style={{
@@ -389,6 +526,93 @@ const ItemForm = () => {
                                 <label htmlFor="disponivel" style={{ cursor: 'pointer', fontSize: '1rem', fontWeight: '500' }}>
                                     Item Disponível para Venda
                                 </label>
+                            </div>
+
+                            {/* Seção de Promoção */}
+                            <div style={{ backgroundColor: '#FFF7ED', border: '2px solid #FED7AA', borderRadius: '0.5rem', padding: '1.25rem' }}>
+                                <p style={{ fontWeight: 700, fontSize: '1rem', color: '#C2410C', marginBottom: '0.75rem' }}>
+                                    🏷️ Promoção Temporária
+                                </p>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    {isPizzaCategory ? (
+                                        <div>
+                                            <label style={{ ...styles.label, display: 'block', marginBottom: '0.5rem' }}>
+                                                Desconto por tamanho (%) — deixe em branco para não aplicar
+                                            </label>
+                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '0.5rem' }}>
+                                                {[
+                                                    { label: 'P', field: 'descontoPPercent', preco: formData.precoP },
+                                                    { label: 'M', field: 'descontoMPercent', preco: formData.precoM },
+                                                    { label: 'G', field: 'descontoGPercent', preco: formData.precoG },
+                                                    { label: 'GG', field: 'descontoGGPercent', preco: formData.precoGG },
+                                                ].map(({ label, field, preco }) => (
+                                                    <div key={field} style={{ textAlign: 'center' }}>
+                                                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#C2410C', marginBottom: '0.25rem' }}>{label}</div>
+                                                        <input
+                                                            style={{ ...styles.input, textAlign: 'center', padding: '0.4rem', marginBottom: '0.25rem' }}
+                                                            name={field}
+                                                            type="number"
+                                                            min="0"
+                                                            max="100"
+                                                            step="0.1"
+                                                            value={formData[field]}
+                                                            onChange={handleChange}
+                                                            placeholder="%"
+                                                        />
+                                                        {formData[field] && preco && (
+                                                            <div style={{ fontSize: '0.7rem', color: '#16A34A', fontWeight: 600 }}>
+                                                                R$ {(parseFloat(preco) * (1 - parseFloat(formData[field]) / 100)).toFixed(2)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div>
+                                            <label style={{ ...styles.label, display: 'block', marginBottom: '0.4rem' }}>
+                                                Desconto (%)
+                                            </label>
+                                            <input
+                                                style={{ ...styles.input, maxWidth: '160px' }}
+                                                name="descontoPercent"
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                step="0.1"
+                                                value={formData.descontoPercent}
+                                                onChange={handleChange}
+                                                placeholder="Ex: 20"
+                                            />
+                                            {formData.descontoPercent && formData.preco && (
+                                                <p style={{ fontSize: '0.82rem', color: '#C2410C', marginTop: '0.35rem', fontWeight: 500 }}>
+                                                    Preço com desconto: R$ {(parseFloat(formData.preco) * (1 - parseFloat(formData.descontoPercent) / 100)).toFixed(2)}
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <div
+                                            onClick={() => setFormData({ ...formData, promocaoAtiva: !formData.promocaoAtiva })}
+                                            style={{
+                                                width: '2.5rem', height: '1.4rem', borderRadius: '999px',
+                                                backgroundColor: formData.promocaoAtiva ? '#DC2626' : '#D1D5DB',
+                                                position: 'relative', cursor: 'pointer', transition: 'background-color 0.2s', flexShrink: 0,
+                                            }}
+                                        >
+                                            <div style={{
+                                                position: 'absolute', top: '2px',
+                                                left: formData.promocaoAtiva ? 'calc(100% - 1.1rem - 2px)' : '2px',
+                                                width: '1.1rem', height: '1.1rem', borderRadius: '50%',
+                                                backgroundColor: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.2)', transition: 'left 0.2s',
+                                            }} />
+                                        </div>
+                                        <label style={{ cursor: 'pointer', fontSize: '0.95rem', fontWeight: 600, color: formData.promocaoAtiva ? '#DC2626' : '#6B7280' }}
+                                            onClick={() => setFormData({ ...formData, promocaoAtiva: !formData.promocaoAtiva })}>
+                                            {formData.promocaoAtiva ? 'Promoção ATIVA — aparece no cardápio' : 'Promoção inativa'}
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
 
                             {error && (

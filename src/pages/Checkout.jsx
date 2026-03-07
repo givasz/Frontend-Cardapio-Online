@@ -29,6 +29,7 @@ const Checkout = () => {
     const [success, setSuccess] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [copySuccess, setCopySuccess] = useState('');
+    const [numeroDeMesas, setNumeroDeMesas] = useState(0);
 
     // --- FUNÇÕES AUXILIARES ---
     const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value });
@@ -85,6 +86,19 @@ const Checkout = () => {
         };
         fetchTaxaEntrega();
 
+        const fetchConfiguracao = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/configuracao`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setNumeroDeMesas(data.numeroDeMesas || 0);
+                }
+            } catch (error) {
+                console.error("Falha ao buscar configuração:", error);
+            }
+        };
+        fetchConfiguracao();
+
         const savedData = localStorage.getItem('customerData');
         if (savedData) {
             const parsed = JSON.parse(savedData);
@@ -102,6 +116,10 @@ const Checkout = () => {
         }
     }, [cartItems, total, clearCart, navigate]);
 
+    useEffect(() => {
+        if (success) window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [success]);
+
     // --- LÓGICA DE ENVIO ---
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -112,7 +130,12 @@ const Checkout = () => {
             if (!formData.endereco.trim()) validationError = 'Por favor, preencha o endereço de entrega.';
             finalAddress = formData.endereco;
         } else if (deliveryOption === 'table') {
-            if (!tableNumber.trim()) validationError = 'Por favor, informe o número da mesa.';
+            const mesaNum = parseInt(tableNumber, 10);
+            if (!tableNumber.trim() || isNaN(mesaNum) || mesaNum < 1) {
+                validationError = 'Por favor, informe o número da mesa.';
+            } else if (numeroDeMesas > 0 && mesaNum > numeroDeMesas) {
+                validationError = `Mesa inválida. O estabelecimento tem apenas ${numeroDeMesas} mesa${numeroDeMesas > 1 ? 's' : ''} (1 a ${numeroDeMesas}).`;
+            }
             finalAddress = `Mesa: ${tableNumber}`;
         } else if (deliveryOption === 'pickup') {
             finalAddress = 'Retirar no estabelecimento';
@@ -162,7 +185,8 @@ const Checkout = () => {
             const r = await fetch(`${API_BASE_URL}/pedido`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pedido) });
             if (!r.ok) throw new Error('Falha ao enviar o pedido.');
             const res = await r.json();
-            setSuccess({ message: `Pedido #${res.pedidoId} realizado com sucesso!`, pedidoId: res.pedidoId, paymentMethod });
+            const computedTotal = deliveryOption === 'delivery' ? total + taxaEntrega : total;
+            setSuccess({ message: `Pedido #${res.pedidoId} realizado com sucesso!`, pedidoId: res.pedidoId, paymentMethod, total: computedTotal });
 
             localStorage.setItem('customerData', JSON.stringify({
                 nomeCliente: formData.nomeCliente,
@@ -187,7 +211,7 @@ const Checkout = () => {
     if (!cartItems || !total) return null;
 
     const finalTotal = deliveryOption === 'delivery' ? total + taxaEntrega : total;
-    const whatsappMessage = success ? encodeURIComponent(`Olá! Gostaria de saber sobre o meu pedido #${success.pedidoId}.`) : '';
+    const whatsappMessage = success ? encodeURIComponent(`Olá! Vou mandar o comprovante do PIX referente ao pedido #${success.pedidoId}.`) : '';
     const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${whatsappMessage}`;
 
     return (
@@ -293,6 +317,22 @@ const Checkout = () => {
                                                 ⏰ Pedido inicia após recebermos o comprovante!
                                             </p>
                                         </div>
+                                    </div>
+
+                                    <div style={{
+                                        backgroundColor: '#FEF2F2',
+                                        padding: '1rem',
+                                        borderRadius: '0.75rem',
+                                        marginBottom: '1.25rem',
+                                        border: '2px solid #DC2626',
+                                        textAlign: 'center'
+                                    }}>
+                                        <p style={{ fontSize: '0.8rem', color: '#991B1B', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
+                                            Total a pagar
+                                        </p>
+                                        <p style={{ fontSize: '2.25rem', fontWeight: 800, color: '#DC2626', lineHeight: 1 }}>
+                                            R$ {success.total?.toFixed(2)}
+                                        </p>
                                     </div>
 
                                     <div style={{
@@ -489,19 +529,27 @@ const Checkout = () => {
                                     <label style={{...styles.label, display: 'block', marginBottom: '0.75rem'}}>
                                         Opção de Entrega
                                     </label>
-                                    <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem'}}>
+                                    <div style={{display: 'flex', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '1rem'}}>
                                         {[{id: 'delivery', name: 'Para Entrega'}, {id: 'table', name: 'Comer no Local'}, {id: 'pickup', name: 'Retirar no Balcão'}].map(option => (
-                                            <label key={option.id} style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '1rem'}}>
-                                                <input
-                                                    type="radio"
-                                                    name="deliveryOption"
-                                                    value={option.id}
-                                                    checked={deliveryOption === option.id}
-                                                    onChange={(e) => setDeliveryOption(e.target.value)}
-                                                    style={{width: '18px', height: '18px'}}
-                                                />
+                                            <button
+                                                key={option.id}
+                                                type="button"
+                                                onClick={() => setDeliveryOption(option.id)}
+                                                style={{
+                                                    padding: '0.5rem 1.1rem',
+                                                    borderRadius: '9999px',
+                                                    fontSize: '0.875rem',
+                                                    fontWeight: 600,
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s ease',
+                                                    border: deliveryOption === option.id ? 'none' : '2px solid #DC2626',
+                                                    backgroundColor: deliveryOption === option.id ? '#DC2626' : '#FEE2E2',
+                                                    color: deliveryOption === option.id ? 'white' : '#DC2626',
+                                                    fontFamily: 'inherit',
+                                                }}
+                                            >
                                                 {option.name}
-                                            </label>
+                                            </button>
                                         ))}
                                     </div>
 
@@ -525,7 +573,7 @@ const Checkout = () => {
                                     {deliveryOption === 'table' && (
                                         <div>
                                             <label style={{...styles.label, display: 'block', marginBottom: '0.5rem'}} htmlFor="tableNumber">
-                                                Número da Mesa
+                                                Número da Mesa{numeroDeMesas > 0 && <span style={{ fontWeight: 400, color: '#9CA3AF', fontSize: '0.8rem' }}> (1 a {numeroDeMesas})</span>}
                                             </label>
                                             <input
                                                 style={styles.input}
@@ -535,8 +583,12 @@ const Checkout = () => {
                                                 id="tableNumber"
                                                 name="tableNumber"
                                                 value={tableNumber}
-                                                onChange={(e) => setTableNumber(e.target.value.replace(/\D/g, ''))}
-                                                placeholder="Informe o nº da mesa"
+                                                onChange={(e) => {
+                                                    const val = e.target.value.replace(/\D/g, '');
+                                                    if (numeroDeMesas > 0 && val !== '' && parseInt(val, 10) > numeroDeMesas) return;
+                                                    setTableNumber(val);
+                                                }}
+                                                placeholder={numeroDeMesas > 0 ? `Mesa 1 a ${numeroDeMesas}` : 'Informe o nº da mesa'}
                                                 required
                                             />
                                         </div>
@@ -563,23 +615,31 @@ const Checkout = () => {
 
                                 {deliveryOption !== 'table' && (
                                     <>
-                                        <div style={{paddingTop: '1rem', borderTop: '2px solid #E5E7EB'}}>
+                                        <div style={{paddingTop: '1rem', borderTop: '2px solid #FEE2E2'}}>
                                             <label style={{...styles.label, display: 'block', marginBottom: '0.75rem'}}>
                                                 Forma de Pagamento
                                             </label>
-                                            <div style={{display: 'flex', gap: '1rem', flexWrap: 'wrap'}}>
+                                            <div style={{display: 'flex', gap: '0.6rem', flexWrap: 'wrap'}}>
                                                 {['Dinheiro', 'Pix', 'Cartão de Crédito', 'Cartão de Débito'].map(method => (
-                                                    <label key={method} style={{display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '1rem'}}>
-                                                        <input
-                                                            type="radio"
-                                                            name="paymentMethod"
-                                                            value={method}
-                                                            checked={paymentMethod === method}
-                                                            onChange={() => setPaymentMethod(method)}
-                                                            style={{width: '18px', height: '18px'}}
-                                                        />
+                                                    <button
+                                                        key={method}
+                                                        type="button"
+                                                        onClick={() => setPaymentMethod(method)}
+                                                        style={{
+                                                            padding: '0.5rem 1.1rem',
+                                                            borderRadius: '9999px',
+                                                            fontSize: '0.875rem',
+                                                            fontWeight: 600,
+                                                            cursor: 'pointer',
+                                                            transition: 'all 0.2s ease',
+                                                            border: paymentMethod === method ? 'none' : '2px solid #DC2626',
+                                                            backgroundColor: paymentMethod === method ? '#DC2626' : '#FEE2E2',
+                                                            color: paymentMethod === method ? 'white' : '#DC2626',
+                                                            fontFamily: 'inherit',
+                                                        }}
+                                                    >
                                                         {method}
-                                                    </label>
+                                                    </button>
                                                 ))}
                                             </div>
                                         </div>
@@ -617,9 +677,9 @@ const Checkout = () => {
                                             return (
                                                 <div key={item.cartId} style={{
                                                     padding: '0.75rem',
-                                                    backgroundColor: '#F9FAFB',
+                                                    backgroundColor: '#FEF2F2',
                                                     borderRadius: '0.5rem',
-                                                    border: '1px solid #E5E7EB'
+                                                    border: '1.5px solid #FEE2E2'
                                                 }}>
                                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
                                                         <span style={{ fontWeight: 600, color: '#1F2937' }}>
@@ -656,11 +716,10 @@ const Checkout = () => {
                                 </div>
 
                                 <div style={{
-                                    paddingTop: '1.5rem',
-                                    borderTop: '2px solid #E5E7EB',
-                                    backgroundColor: '#F9FAFB',
+                                    backgroundColor: '#FEF2F2',
+                                    border: '2px solid #FEE2E2',
                                     padding: '1.5rem',
-                                    borderRadius: '0.5rem',
+                                    borderRadius: '0.75rem',
                                     marginTop: '1rem'
                                 }}>
                                     {deliveryOption === 'delivery' && taxaEntrega > 0 && (
@@ -674,7 +733,7 @@ const Checkout = () => {
                                         </>
                                     )}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1.5rem', marginBottom: '1rem' }}>
-                                        <span>Total:</span><span style={{color: '#EA580C'}}>R$ {finalTotal.toFixed(2)}</span>
+                                        <span>Total:</span><span style={{color: '#DC2626'}}>R$ {finalTotal.toFixed(2)}</span>
                                     </div>
                                     {error && <p style={{ color: 'red', fontSize: '1rem', marginBottom: '1rem', backgroundColor: '#FEE2E2', padding: '0.75rem', borderRadius: '0.375rem' }}>{error}</p>}
                                     <StyledButton

@@ -18,41 +18,62 @@ const StoreStatusBanner = () => {
                 }
             } catch (error) {
                 console.error("Falha ao buscar a taxa de entrega:", error);
-                // Não mostra alert aqui pois é apenas informação secundária no banner
             }
         };
-
         fetchTaxaEntrega();
     }, []);
 
-    const bannerStyle = {
-        padding: '0.75rem 1rem',
-        textAlign: 'center',
-        fontWeight: 500,
-        color: 'white',
-        backgroundColor: isOpen ? '#16A34A' : '#DC2626'
-    };
-
     return (
-        <div style={bannerStyle}>
-            <div style={{ ...styles.container, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.75rem' }}>
-                <ClockIcon style={{ width: '1.5rem', height: '1.5rem', color: 'white', flexShrink: 0 }} />
-                
-                {/* ✅ ALTERAÇÃO: Container para o texto, permitindo múltiplas linhas */}
-                <div style={{ textAlign: 'left', color: 'white' }}>
-                    
-                    {/* Linha 1: Status de abertura/fechamento */}
-                    <p style={{ margin: 0, fontWeight: 500 }}>
-                        {storeStatusMessage}
-                    </p>
-                    
-                    {/* Linha 2: Taxa de entrega (só aparece se a loja estiver aberta e a taxa carregada) */}
-                    {isOpen && taxaEntrega !== null && (
-                        <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.875rem', opacity: 0.9 }}>
-                            {`Taxa de Entrega: R$ ${taxaEntrega.toFixed(2).replace('.', ',')}`}
-                        </p>
-                    )}
-                </div>
+        <div style={{
+            backgroundColor: isOpen ? '#F0FDF4' : '#FEF2F2',
+            borderBottom: `1px solid ${isOpen ? '#BBF7D0' : '#FECACA'}`,
+            padding: '0.6rem 1rem',
+        }}>
+            <div style={{
+                ...styles.container,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.75rem',
+                flexWrap: 'wrap',
+            }}>
+                {/* Status pill */}
+                <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    backgroundColor: isOpen ? '#16A34A' : '#DC2626',
+                    color: 'white',
+                    fontSize: '0.7rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.07em',
+                    textTransform: 'uppercase',
+                    padding: '0.25rem 0.65rem',
+                    borderRadius: '9999px',
+                    flexShrink: 0,
+                }}>
+                    <span style={{
+                        width: '6px',
+                        height: '6px',
+                        borderRadius: '50%',
+                        backgroundColor: 'rgba(255,255,255,0.8)',
+                        animation: isOpen ? 'pulse 2s ease-in-out infinite' : 'none',
+                        flexShrink: 0,
+                    }} />
+                    {isOpen ? 'Aberto' : 'Fechado'}
+                </span>
+
+                <ClockIcon style={{ width: '1rem', height: '1rem', color: isOpen ? '#16A34A' : '#DC2626', flexShrink: 0 }} />
+
+                <p style={{
+                    margin: 0,
+                    fontSize: '0.85rem',
+                    fontWeight: 500,
+                    color: isOpen ? '#166534' : '#991B1B',
+                }}>
+                    {storeStatusMessage}
+                </p>
+
             </div>
         </div>
     );

@@ -16,6 +16,8 @@ const MesaManager = () => {
     const [config, setConfig] = useState(null);
     const [mesaSelecionada, setMesaSelecionada] = useState(null); // { numero, sessao }
     const [fechandoId, setFechandoId] = useState(null);
+    const [confirmFecharId, setConfirmFecharId] = useState(null);
+    const [fetchError, setFetchError] = useState('');
     const [editandoMesas, setEditandoMesas] = useState(false);
     const [novoNumero, setNovoNumero] = useState('');
     const [salvando, setSalvando] = useState(false);
@@ -62,18 +64,14 @@ const MesaManager = () => {
             setConfig(updated);
             setEditandoMesas(false);
         } catch {
-            alert('Erro ao salvar número de mesas');
+            setFetchError('Erro ao salvar número de mesas.');
         } finally {
             setSalvando(false);
         }
     };
 
     const handleFecharMesa = async (sessao) => {
-        const pendentes = sessao.pedidos.filter(p => [1, 2, 3].includes(p.status)).length;
-        let msg = `Fechar Mesa ${sessao.mesa}?\n\nA conta será encerrada e não aparecerá mais aqui.`;
-        if (pendentes > 0) msg += `\n\n⚠️ ${pendentes} pedido(s) ainda em andamento.`;
-        if (!window.confirm(msg)) return;
-
+        setConfirmFecharId(null);
         setFechandoId(sessao.id);
         try {
             const res = await fetch(`${API_BASE_URL}/admin/sessao/${sessao.id}/fechar`, {
@@ -84,7 +82,7 @@ const MesaManager = () => {
             setMesaSelecionada(null);
             await fetchTudo();
         } catch (err) {
-            alert('Erro ao fechar mesa: ' + err.message);
+            setFetchError('Erro ao fechar mesa: ' + err.message);
         } finally {
             setFechandoId(null);
         }
@@ -116,6 +114,12 @@ const MesaManager = () => {
 
     return (
         <div>
+            {fetchError && (
+                <div style={{ marginBottom: '1rem', backgroundColor: '#FEF2F2', border: '1.5px solid #FECACA', borderRadius: '0.5rem', padding: '0.5rem 0.875rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <p style={{ color: '#DC2626', fontSize: '0.8rem', fontWeight: 500, margin: 0 }}>{fetchError}</p>
+                    <button onClick={() => setFetchError('')} style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', fontSize: '1rem', lineHeight: 1, padding: '0 0.25rem' }}>✕</button>
+                </div>
+            )}
             {/* Barra de config */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
                 <span style={{ fontWeight: 600, color: '#374151' }}>
@@ -276,22 +280,41 @@ const MesaManager = () => {
                                     </div>
 
                                     {/* Rodapé com total e fechar */}
-                                    <div style={{ borderTop: '2px solid #FEE2E2', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ borderTop: '2px solid #FEE2E2', paddingTop: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
                                         <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>
                                             Total: <span style={{ color: '#DC2626' }}>R$ {totalSelecionada.toFixed(2)}</span>
                                         </div>
-                                        <button
-                                            onClick={() => handleFecharMesa(sessaoSelecionada)}
-                                            disabled={fechandoId === sessaoSelecionada.id}
-                                            style={{
-                                                backgroundColor: fechandoId === sessaoSelecionada.id ? '#9CA3AF' : '#DC2626',
-                                                color: 'white', border: 'none', borderRadius: '10px',
-                                                padding: '0.75rem 2rem', fontWeight: 700, fontSize: '1rem',
-                                                cursor: fechandoId === sessaoSelecionada.id ? 'not-allowed' : 'pointer',
-                                            }}
-                                        >
-                                            {fechandoId === sessaoSelecionada.id ? 'Fechando...' : 'Fechar Mesa'}
-                                        </button>
+                                        {confirmFecharId === sessaoSelecionada.id ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem' }}>
+                                                {sessaoSelecionada.pedidos.filter(p => [1,2,3].includes(p.status)).length > 0 && (
+                                                    <span style={{ fontSize: '0.78rem', color: '#DC2626', fontWeight: 600 }}>
+                                                        ⚠️ {sessaoSelecionada.pedidos.filter(p => [1,2,3].includes(p.status)).length} pedido(s) em andamento
+                                                    </span>
+                                                )}
+                                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                    <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#374151' }}>Confirmar fechamento?</span>
+                                                    <button onClick={() => handleFecharMesa(sessaoSelecionada)} disabled={fechandoId === sessaoSelecionada.id} style={{ backgroundColor: '#DC2626', color: 'white', border: 'none', borderRadius: '8px', padding: '0.5rem 1.25rem', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer' }}>
+                                                        {fechandoId === sessaoSelecionada.id ? 'Fechando...' : 'Sim, fechar'}
+                                                    </button>
+                                                    <button onClick={() => setConfirmFecharId(null)} style={{ backgroundColor: '#F3F4F6', color: '#374151', border: '1px solid #D1D5DB', borderRadius: '8px', padding: '0.5rem 1rem', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer' }}>
+                                                        Cancelar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <button
+                                                onClick={() => setConfirmFecharId(sessaoSelecionada.id)}
+                                                disabled={fechandoId === sessaoSelecionada.id}
+                                                style={{
+                                                    backgroundColor: '#DC2626',
+                                                    color: 'white', border: 'none', borderRadius: '10px',
+                                                    padding: '0.75rem 2rem', fontWeight: 700, fontSize: '1rem',
+                                                    cursor: 'pointer',
+                                                }}
+                                            >
+                                                Fechar Mesa
+                                            </button>
+                                        )}
                                     </div>
                                 </>
                             )}

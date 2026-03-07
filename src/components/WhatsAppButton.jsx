@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 // Estilos do botão WhatsApp
 const whatsappButtonStyles = {
@@ -91,12 +91,15 @@ Aguardamos voce em breve!`
 };
 
 const WhatsAppButton = ({ pedido, statusAtual }) => {
+    const [noPhone, setNoPhone] = useState(false);
+
     const handleWhatsAppClick = () => {
         // Remove caracteres não numéricos do telefone
         const telefone = pedido.telefone?.replace(/\D/g, '') || '';
 
         if (!telefone) {
-            alert('❌ Número de telefone não encontrado para este pedido.');
+            setNoPhone(true);
+            setTimeout(() => setNoPhone(false), 3000);
             return;
         }
 
@@ -115,15 +118,22 @@ const WhatsAppButton = ({ pedido, statusAtual }) => {
     };
 
     return (
-        <button
-            style={whatsappButtonStyles}
-            onClick={handleWhatsAppClick}
-            onMouseEnter={(e) => e.target.style.backgroundColor = '#20BA5A'}
-            onMouseLeave={(e) => e.target.style.backgroundColor = '#25D366'}
-        >
-            <WhatsAppIcon />
-            Atualizar Cliente
-        </button>
+        <div>
+            {noPhone && (
+                <p style={{ fontSize: '0.75rem', color: '#DC2626', margin: '0 0 0.25rem', fontWeight: 500 }}>
+                    Telefone não cadastrado.
+                </p>
+            )}
+            <button
+                style={whatsappButtonStyles}
+                onClick={handleWhatsAppClick}
+                onMouseEnter={(e) => e.target.style.backgroundColor = '#20BA5A'}
+                onMouseLeave={(e) => e.target.style.backgroundColor = '#25D366'}
+            >
+                <WhatsAppIcon />
+                Atualizar Cliente
+            </button>
+        </div>
     );
 };
 

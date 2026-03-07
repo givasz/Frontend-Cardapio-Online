@@ -9,7 +9,7 @@ import CartSidebar from './components/CartSidebar';
 
 function App() {
     return (
-        <div style={{ backgroundColor: '#F9FAFB', minHeight: '100vh' }}>
+        <div style={{ minHeight: '100vh' }}>
             <Header />
             <StoreStatusBanner />
             <main style={styles.container}>

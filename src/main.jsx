@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet, ScrollRestoration } from "react-router-dom";
 import { AuthProvider } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
 import { ScheduleProvider } from './contexts/ScheduleContext';
@@ -12,31 +12,43 @@ import Checkout from './pages/Checkout.jsx';
 import ItemForm from './pages/ItemForm.jsx';
 import './index.css';
 
+const Root = () => (
+  <>
+    <ScrollRestoration />
+    <Outlet />
+  </>
+);
+
 // Define as rotas da aplicação
 const router = createBrowserRouter([
   {
-    path: "/",
-    element: <App />, // A página principal (cardápio)
-  },
-  {
-    path: "/customize-pizza",
-    element: <PizzaCustomization />,
-  },
-  {
-    path: "/checkout",
-    element: <Checkout />,
-  },
-  {
-    path: "/adm",
-    element: <AdmPage />, // A página de administração
-  },
-  {
-    path: "/admin/item-form",
-    element: <ItemForm />, // Página de formulário de item (admin)
-  },
-  {
-    path: "/pedidos",
-    element: <PedidosStatus />, // A página de pedidos
+    element: <Root />,
+    children: [
+      {
+        path: "/",
+        element: <App />,
+      },
+      {
+        path: "/customize-pizza",
+        element: <PizzaCustomization />,
+      },
+      {
+        path: "/checkout",
+        element: <Checkout />,
+      },
+      {
+        path: "/adm",
+        element: <AdmPage />,
+      },
+      {
+        path: "/admin/item-form",
+        element: <ItemForm />,
+      },
+      {
+        path: "/pedidos",
+        element: <PedidosStatus />,
+      },
+    ],
   },
 ]);
 
