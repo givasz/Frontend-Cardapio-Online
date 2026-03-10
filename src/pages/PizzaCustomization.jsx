@@ -201,7 +201,6 @@ const PizzaCustomization = () => {
                     border: '3px solid #FEE2E2',
                     display: 'flex',
                     flexDirection: 'column',
-                    maxHeight: '95vh'
                 }}>
                     <div style={{
                         background: 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
@@ -224,7 +223,7 @@ const PizzaCustomization = () => {
                         </StyledButton>
                     </div>
 
-                    <div className="pizza-custom-card-body" style={{padding: '1.5rem', flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
+                    <div className="pizza-custom-card-body" style={{padding: '1.5rem', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
                         {/* SELEÇÃO DE TAMANHO + SABORES ESCOLHIDOS */}
                         <div className="pizza-custom-flex-row" style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
                             {/* TAMANHO */}
@@ -241,10 +240,13 @@ const PizzaCustomization = () => {
                                             onClick={() => handleSizeChange(size.name)}
                                             className="pizza-size-btn"
                                             style={{
-                                                padding: '0.5rem 0.75rem',
-                                                fontSize: '0.875rem',
+                                                padding: '0.5rem 0.5rem',
+                                                fontSize: '0.9rem',
                                                 fontWeight: 700,
-                                                flex: '1'
+                                                flex: '1',
+                                                flexDirection: 'column',
+                                                gap: '0.15rem',
+                                                minWidth: 0,
                                             }}
                                         >
                                             {size.name}
