@@ -187,13 +187,13 @@ const PizzaCustomization = () => {
     if (!basePizza || !allFlavors) return null;
 
     return (
-        <div style={{ backgroundColor: '#FEF2F2', minHeight: '100vh', height: '100vh', display: 'flex', alignItems: 'center', backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(220, 38, 38, 0.05) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(220, 38, 38, 0.05) 0%, transparent 50%)' }}>
+        <div className="pizza-custom-page" style={{ backgroundColor: '#FEF2F2', minHeight: '100vh', display: 'flex', alignItems: 'center', backgroundImage: 'radial-gradient(circle at 20% 50%, rgba(220, 38, 38, 0.05) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(220, 38, 38, 0.05) 0%, transparent 50%)' }}>
             <div style={{
                 ...styles.container,
                 maxWidth: '900px',
                 padding: '1rem'
             }}>
-                <div style={{
+                <div className="pizza-custom-card" style={{
                     backgroundColor: 'white',
                     borderRadius: '1.5rem',
                     boxShadow: '0 20px 25px -5px rgba(220, 38, 38, 0.15), 0 10px 10px -5px rgba(220, 38, 38, 0.1)',
@@ -224,7 +224,7 @@ const PizzaCustomization = () => {
                         </StyledButton>
                     </div>
 
-                    <div style={{padding: '1.5rem', flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
+                    <div className="pizza-custom-card-body" style={{padding: '1.5rem', flexGrow: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
                         {/* SELEÇÃO DE TAMANHO + SABORES ESCOLHIDOS */}
                         <div className="pizza-custom-flex-row" style={{ display: 'flex', gap: '0.75rem', flexShrink: 0 }}>
                             {/* TAMANHO */}

@@ -288,6 +288,79 @@ p {
   }
 }
 
+/* ── PizzaCustomization – Mobile ── */
+@media (max-width: 640px) {
+  .pizza-custom-page {
+    align-items: flex-start !important;
+    padding-top: 0 !important;
+  }
+
+  .pizza-custom-card {
+    max-height: none !important;
+    border-radius: 0.75rem !important;
+    margin: 1rem 0 !important;
+  }
+
+  .pizza-custom-card-body {
+    overflow-y: visible !important;
+    padding: 1rem !important;
+  }
+
+  .pizza-custom-card-body .pizza-custom-flex-row > div:first-child {
+    flex: 1 1 100% !important;
+  }
+}
+
+/* ── Checkout – Mobile ── */
+@media (max-width: 640px) {
+  .checkout-header {
+    padding: 1.25rem 1rem !important;
+    align-items: flex-start !important;
+    gap: 0.75rem !important;
+  }
+
+  .checkout-header h3 {
+    font-size: 1.5rem !important;
+  }
+
+  .checkout-body {
+    padding: 1rem !important;
+  }
+}
+
+/* ── CartSidebar – Mobile ── */
+@media (max-width: 440px) {
+  .cart-sidebar-footer {
+    padding: 0.875rem 1rem !important;
+  }
+}
+
+/* ── Menu hero – Mobile ── */
+@media (max-width: 480px) {
+  .menu-hero {
+    padding: 1.5rem 1rem 1rem !important;
+  }
+
+  .menu-hero h2 {
+    font-size: 1.5rem !important;
+  }
+}
+
+/* ── General touch targets ── */
+@media (max-width: 640px) {
+  input, select, textarea, button {
+    font-size: 16px !important; /* prevents iOS zoom on focus */
+  }
+
+  input[type="text"],
+  input[type="tel"],
+  input[type="number"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* ── Menu hero section ── */
 .menu-hero {
   text-align: center;

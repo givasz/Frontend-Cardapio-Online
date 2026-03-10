@@ -229,7 +229,7 @@ const Checkout = () => {
                     overflow: 'hidden',
                     border: '3px solid #FEE2E2'
                 }}>
-                    <div style={{
+                    <div className="checkout-header" style={{
                         background: success ? 'linear-gradient(135deg, #16A34A 0%, #15803D 100%)' : 'linear-gradient(135deg, #DC2626 0%, #B91C1C 100%)',
                         color: 'white',
                         padding: '2rem',
@@ -255,7 +255,7 @@ const Checkout = () => {
                         </StyledButton>
                     </div>
 
-                    <div style={{ padding: '1.5rem' }}>
+                    <div className="checkout-body" style={{ padding: '1.5rem' }}>
                         {success ? (
                             success.paymentMethod === 'Pix' ? (
                                 <div style={{ textAlign: 'center' }}>

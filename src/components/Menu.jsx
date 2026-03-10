@@ -229,7 +229,7 @@ const Menu = () => {
                                 </div>
 
                                 {/* Footer */}
-                                <div style={{
+                                <div className="menu-card-footer" style={{
                                     padding: '0.75rem 1.25rem 1.1rem',
                                     display: 'flex',
                                     justifyContent: 'space-between',
