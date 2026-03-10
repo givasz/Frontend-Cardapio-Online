@@ -239,6 +239,7 @@ const PizzaCustomization = () => {
                                             key={size.name}
                                             variant={selectedSize === size.name ? 'primary' : 'secondary'}
                                             onClick={() => handleSizeChange(size.name)}
+                                            className="pizza-size-btn"
                                             style={{
                                                 padding: '0.5rem 0.75rem',
                                                 fontSize: '0.875rem',
@@ -247,7 +248,7 @@ const PizzaCustomization = () => {
                                             }}
                                         >
                                             {size.name}
-                                            <div style={{ fontSize: '0.625rem', fontWeight: 400, marginTop: '0.1rem' }}>
+                                            <div className="pizza-size-btn-sub" style={{ fontSize: '0.625rem', fontWeight: 400, marginTop: '0.1rem' }}>
                                                 {size.flavors} sabor{size.flavors > 1 ? 'es' : ''}
                                             </div>
                                         </StyledButton>

@@ -251,7 +251,7 @@ p {
   }
 
   .menu-grid {
-    grid-template-columns: 1fr 1fr !important;
+    grid-template-columns: 1fr !important;
     gap: 0.75rem !important;
   }
 
@@ -306,8 +306,21 @@ p {
     padding: 1rem !important;
   }
 
-  .pizza-custom-card-body .pizza-custom-flex-row > div:first-child {
-    flex: 1 1 100% !important;
+  /* Garante que os filhos do flex-row ocupem 100% da largura em mobile */
+  .pizza-custom-flex-row > div {
+    width: 100% !important;
+    flex: 1 1 auto !important;
+  }
+
+  /* Botões de tamanho (P/M/G/GG): mais fáceis de tocar */
+  .pizza-size-btn {
+    padding: 0.75rem 0.5rem !important;
+    font-size: 1rem !important;
+    min-height: 52px !important;
+  }
+
+  .pizza-size-btn-sub {
+    font-size: 0.7rem !important;
   }
 }
 
@@ -346,15 +359,12 @@ p {
   }
 }
 
-/* ── General touch targets ── */
+/* ── General touch targets (prevent iOS zoom on input focus) ── */
 @media (max-width: 640px) {
-  input, select, textarea, button {
-    font-size: 16px !important; /* prevents iOS zoom on focus */
-  }
-
   input[type="text"],
   input[type="tel"],
   input[type="number"],
+  input[type="email"],
   select,
   textarea {
     font-size: 16px !important;
